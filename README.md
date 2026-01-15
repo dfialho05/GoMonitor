@@ -5,7 +5,7 @@
 
 Minimalist TUI, resource manager for Linux **written in Go**. It provides real-time and snapshot views of CPU, RAM, and GPU metrics, designed to offer a clear overview of system hardware utilization directly in the terminal.
 
-## 📸 Screenshots
+##  Screenshots
 
 ### Default View
 ![Default View](assets/default.png)
@@ -15,12 +15,12 @@ Minimalist TUI, resource manager for Linux **written in Go**. It provides real-t
 
 ---
 
-## ✨ Features
+## Features
 
-- 🚀 **Lightweight** - Low resource consumption.
-- 🎨 **Interactive TUI** - Navigate, sort, and kill processes.
-- 📊 **Real-time Metrics** - GPU, CPU, RAM and Disk monitoring.
-- ⚙️ **Auto-start** - Optional configuration to run on terminal startup.
+-  **Lightweight** - Low resource consumption.
+-  **Interactive TUI** - Navigate, sort, and kill processes.
+-  **Real-time Metrics** - GPU, CPU, RAM and Disk monitoring.
+-  **Auto-start** - Optional configuration to run on terminal startup.
 
 ---
 
