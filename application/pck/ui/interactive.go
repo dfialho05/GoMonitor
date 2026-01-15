@@ -102,12 +102,10 @@ func (tui *InteractiveTUI) Run() error {
 
 	// First data update
 	tui.updateProcesses()
+	tui.render()
 
 	// Main interface loop
 	for tui.running {
-		// Render the interface
-		tui.render()
-
 		// Wait for events
 		select {
 		case <-sigChan:
@@ -200,6 +198,9 @@ func (tui *InteractiveTUI) renderHeader() {
 	fmt.Println(cyanColor + boldColor + "║" + greenColor + "    ██████╗  ██████╗ ███╗   ███╗" + cyanColor + "                    GOMONITOR - Interactive Process Manager                    " + "║" + resetColor)
 	fmt.Println(cyanColor + boldColor + "║" + greenColor + "   ██╔════╝ ██╔═══██╗████╗ ████║" + cyanColor + "                     Real-time System Resource Monitor                         " + "║" + resetColor)
 	fmt.Println(cyanColor + boldColor + "║" + greenColor + "   ██║  ███╗██║   ██║██╔████╔██║" + cyanColor + "                                                                               " + "║" + resetColor)
+	fmt.Println(cyanColor + boldColor + "║" + greenColor + "   ██║   ██║██║   ██║██║╚██╔╝██║" + cyanColor + "                                                                               " + "║" + resetColor)
+	fmt.Println(cyanColor + boldColor + "║" + greenColor + "   ╚██████╔╝╚██████╔╝██║ ╚═╝ ██║" + cyanColor + "                                                                               " + "║" + resetColor)
+	fmt.Println(cyanColor + boldColor + "║" + greenColor + "    ╚═════╝  ╚═════╝ ╚═╝     ╚═╝" + cyanColor + "                                                                               " + "║" + resetColor)
 	fmt.Println(cyanColor + boldColor + "╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝" + resetColor)
 	fmt.Println()
 }
@@ -328,29 +329,36 @@ func (tui *InteractiveTUI) handleKey(key byte) {
 		if tui.selectedIndex > 0 {
 			tui.selectedIndex--
 		}
+		tui.render()
 
 	case 66: // Down arrow
 		if tui.selectedIndex < len(tui.processes)-1 {
 			tui.selectedIndex++
 		}
+		tui.render()
 
 	case 'r', 'R': // Refresh
 		tui.updateProcesses()
+		tui.render()
 
 	case 'c', 'C': // Sort by CPU
 		tui.sortMode = SortByCPU
 		tui.updateProcesses()
+		tui.render()
 
 	case 'm', 'M': // Sort by RAM (Memory)
 		tui.sortMode = SortByRAM
 		tui.updateProcesses()
+		tui.render()
 
 	case 'p', 'P': // Sort by PID
 		tui.sortMode = SortByPID
 		tui.updateProcesses()
+		tui.render()
 
 	case 127, 'd', 'D': // Delete or D - kill process
 		tui.killSelectedProcess()
+		tui.render()
 	}
 }
 
@@ -379,7 +387,7 @@ func (tui *InteractiveTUI) killSelectedProcess() {
 
 // captureKeys captures keys from the terminal in raw mode
 func (tui *InteractiveTUI) captureKeys(keyChan chan byte) {
-	buf := make([]byte, 3)
+	buf := make([]byte, 6)
 	for tui.running {
 		n, err := os.Stdin.Read(buf)
 		if err != nil {
@@ -387,10 +395,13 @@ func (tui *InteractiveTUI) captureKeys(keyChan chan byte) {
 		}
 
 		if n > 0 {
-			// Detect escape sequences (arrows)
-			if buf[0] == 27 && n == 3 {
-				// Escape sequence for arrows: ESC [ A/B/C/D
-				if buf[1] == '[' {
+			// Detect escape sequences (arrows and F-keys)
+			if buf[0] == 27 && n >= 3 {
+				// F5 key: ESC [ 1 5 ~
+				if n >= 5 && buf[1] == '[' && buf[2] == '1' && buf[3] == '5' && buf[4] == '~' {
+					keyChan <- 'r' // Treat F5 as refresh (same as 'R')
+					// Escape sequence for arrows: ESC [ A/B/C/D
+				} else if buf[1] == '[' {
 					keyChan <- buf[2] // A=65 (↑), B=66 (↓), C=67 (→), D=68 (←)
 				} else {
 					keyChan <- buf[0] // Simple ESC
