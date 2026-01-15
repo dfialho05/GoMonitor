@@ -17,4 +17,17 @@ install: build
 uninstall:
 	@echo "Uninstalling $(APP_NAME)..."
 	@sudo rm -f $(INSTALL_PATH)/$(APP_NAME)
+	@if grep -q "^gom$$" $(HOME)/.bashrc || grep -q "# Run GoMonitor on terminal startup" $(HOME)/.bashrc; then \
+		echo "Removing auto-start from ~/.bashrc..."; \
+		sed -i '/# Run GoMonitor on terminal startup/d' $(HOME)/.bashrc; \
+		sed -i '/^gom$$/d' $(HOME)/.bashrc; \
+		echo "Auto-start removed from ~/.bashrc"; \
+	fi
 	@echo "Uninstallation complete"
+
+help:
+	@echo "Usage:"
+	@echo "  make build       Build $(APP_NAME)"
+	@echo "  make install     Install $(APP_NAME) to $(INSTALL_PATH)"
+	@echo "  make uninstall   Uninstall $(APP_NAME) from $(INSTALL_PATH)"
+	@echo "  make help        Display this help message"

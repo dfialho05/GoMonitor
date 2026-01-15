@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/dfialho05/GoMonitor/application/pck"
 	"github.com/dfialho05/GoMonitor/application/pck/common"
@@ -71,6 +74,12 @@ func handleCommandLineArgs() {
 	// Help mode
 	if arg1 == "-h" || arg1 == "--help" {
 		printHelp()
+		return
+	}
+
+	// Startup toggle mode
+	if arg1 == "-s" || arg1 == "--startup" {
+		toggleAutoStart()
 		return
 	}
 
@@ -143,6 +152,7 @@ func printHelp() {
 
 	fmt.Println("\n" + colorBold + "OPTIONS:" + colorReset)
 	fmt.Println("  " + colorCyan + "-h, --help" + colorReset + "              Shows this help message")
+	fmt.Println("  " + colorCyan + "-s, --startup" + colorReset + "           Toggle auto-start on terminal startup")
 	fmt.Println("  " + colorCyan + "-f, --full" + colorReset + "              Interactive TUI mode (navigate processes, kill, etc)")
 	fmt.Println("  " + colorCyan + "-a, --all" + colorReset + "               Shows complete system overview")
 	fmt.Println("  " + colorCyan + "-c, --cpu" + colorReset + "               Shows detailed CPU information")
@@ -152,11 +162,12 @@ func printHelp() {
 	fmt.Println("  " + colorCyan + "-t, --top" + colorReset + " [N]           Shows top N processes (default: 10)")
 
 	fmt.Println("\n" + colorBold + "EXAMPLES:" + colorReset)
-	fmt.Println("  gomonitor                    # Shows default interface")
-	fmt.Println("  gomonitor -f                 # Interactive TUI mode")
-	fmt.Println("  gomonitor --all              # Shows complete overview")
-	fmt.Println("  gomonitor --cpu              # Shows only CPU information")
-	fmt.Println("  gomonitor -t 20              # Shows top 20 processes")
+	fmt.Println("  gom                          # Shows default interface")
+	fmt.Println("  gom -s                       # Toggle auto-start on terminal startup")
+	fmt.Println("  gom -f                       # Interactive TUI mode")
+	fmt.Println("  gom --all                    # Shows complete overview")
+	fmt.Println("  gom --cpu                    # Shows only CPU information")
+	fmt.Println("  gom -t 20                    # Shows top 20 processes")
 
 	fmt.Println("\n" + colorBold + "Author:" + colorReset)
 	fmt.Println("  GoMonitor is a system monitoring tool like neofetch based on Go")
@@ -345,5 +356,62 @@ func showInteractiveTUI() {
 	if err := tui.Run(); err != nil {
 		fmt.Printf(colorRed+"\nError running interactive interface: %v\n"+colorReset, err)
 		fmt.Println(colorYellow + "\nTip: Make sure you're running in a real interactive terminal." + colorReset)
+	}
+}
+
+// toggleAutoStart enables or disables auto-start on terminal startup
+func toggleAutoStart() {
+	currentUser, err := user.Current()
+	if err != nil {
+		fmt.Printf(colorRed+"Error: Could not get current user: %v\n"+colorReset, err)
+		return
+	}
+
+	bashrcPath := filepath.Join(currentUser.HomeDir, ".bashrc")
+
+	// Read current .bashrc content
+	content, err := os.ReadFile(bashrcPath)
+	if err != nil {
+		fmt.Printf(colorRed+"Error: Could not read %s: %v\n"+colorReset, bashrcPath, err)
+		return
+	}
+
+	lines := strings.Split(string(content), "\n")
+	isEnabled := false
+	newLines := []string{}
+
+	// Check if gom is already in .bashrc and remove it
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "gom" || trimmed == "# Run GoMonitor on terminal startup" {
+			isEnabled = true
+			continue // Skip this line (remove it)
+		}
+		newLines = append(newLines, line)
+	}
+
+	if isEnabled {
+		// It was enabled, so we disabled it
+		err = os.WriteFile(bashrcPath, []byte(strings.Join(newLines, "\n")), 0644)
+		if err != nil {
+			fmt.Printf(colorRed+"Error: Could not write to %s: %v\n"+colorReset, bashrcPath, err)
+			return
+		}
+		fmt.Println(colorYellow + "Auto-start disabled!" + colorReset)
+		fmt.Println(colorCyan + "gom will no longer run automatically on terminal startup" + colorReset)
+	} else {
+		// It was disabled, so we enable it
+		newLines = append(newLines, "")
+		newLines = append(newLines, "# Run GoMonitor on terminal startup")
+		newLines = append(newLines, "gom")
+
+		err = os.WriteFile(bashrcPath, []byte(strings.Join(newLines, "\n")), 0644)
+		if err != nil {
+			fmt.Printf(colorRed+"Error: Could not write to %s: %v\n"+colorReset, bashrcPath, err)
+			return
+		}
+		fmt.Println(colorGreen + "Auto-start enabled!" + colorReset)
+		fmt.Println(colorCyan + "gom will now run automatically on every new terminal session" + colorReset)
+		fmt.Println(colorYellow + "Restart your terminal or run: source ~/.bashrc" + colorReset)
 	}
 }
