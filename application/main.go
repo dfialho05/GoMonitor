@@ -74,32 +74,6 @@ func handleCommandLineArgs() {
 		return
 	}
 
-	// Specific process monitoring mode
-	if arg1 == "-p" || arg1 == "--pid" {
-		if len(os.Args) < 3 {
-			fmt.Println(colorRed + "Error: PID not provided" + colorReset)
-			printUsage()
-			return
-		}
-
-		pid, err := strconv.Atoi(os.Args[2])
-		if err != nil {
-			fmt.Printf(colorRed+"Error: Invalid PID '%s'\n"+colorReset, os.Args[2])
-			return
-		}
-
-		// Default interval of 2 seconds
-		interval := 2
-		if len(os.Args) > 3 {
-			if i, err := strconv.Atoi(os.Args[3]); err == nil {
-				interval = i
-			}
-		}
-
-		monitorProcess(int32(pid), interval)
-		return
-	}
-
 	// Top processes listing mode
 	if arg1 == "-t" || arg1 == "--top" {
 		n := 10 // Default: top 10
@@ -176,7 +150,6 @@ func printHelp() {
 	fmt.Println("  " + colorCyan + "-g, --gpu" + colorReset + "               Shows GPU information")
 	fmt.Println("  " + colorCyan + "-d, --disk" + colorReset + "              Shows disk information")
 	fmt.Println("  " + colorCyan + "-t, --top" + colorReset + " [N]           Shows top N processes (default: 10)")
-	fmt.Println("  " + colorCyan + "-p, --pid" + colorReset + " PID [interval] Monitors specific process")
 
 	fmt.Println("\n" + colorBold + "EXAMPLES:" + colorReset)
 	fmt.Println("  gomonitor                    # Shows default interface")
@@ -184,8 +157,6 @@ func printHelp() {
 	fmt.Println("  gomonitor --all              # Shows complete overview")
 	fmt.Println("  gomonitor --cpu              # Shows only CPU information")
 	fmt.Println("  gomonitor -t 20              # Shows top 20 processes")
-	fmt.Println("  gomonitor -p 1234            # Monitors process with PID 1234")
-	fmt.Println("  gomonitor -p 1234 5          # Monitors PID 1234 every 5 seconds")
 
 	fmt.Println("\n" + colorBold + "Author:" + colorReset)
 	fmt.Println("  GoMonitor is a system monitoring tool like neofetch based on Go")
@@ -303,28 +274,6 @@ func showDiskInfo() {
 func showTopProcesses(n int) {
 	if err := pck.PrintTopProcesses(n); err != nil {
 		fmt.Printf(colorRed+"Error getting processes: %v\n"+colorReset, err)
-	}
-}
-
-// monitorProcess continuously monitors a specific process
-// Updates statistics at the specified interval
-func monitorProcess(pid int32, intervalSeconds int) {
-	fmt.Println(colorBold + colorGreen + "\n=== Process Monitoring ===" + colorReset)
-
-	// First, check if the process exists and show initial information
-	info, err := pck.GetProcessAssociationByPID(pid)
-	if err != nil {
-		fmt.Printf(colorRed+"Error: Process with PID %d not found or inaccessible\n"+colorReset, pid)
-		fmt.Printf("Details: %v\n", err)
-		return
-	}
-
-	fmt.Printf(colorCyan+"\n✓ Process found: "+colorReset+"%s (PID: %d)\n", info.Name, info.PID)
-	fmt.Printf(colorYellow+"Update interval: %d seconds\n"+colorReset, intervalSeconds)
-
-	// Start continuous monitoring
-	if err := common.MonitorProcessContinuously(pid, intervalSeconds); err != nil {
-		fmt.Printf(colorRed+"\nError during monitoring: %v\n"+colorReset, err)
 	}
 }
 
